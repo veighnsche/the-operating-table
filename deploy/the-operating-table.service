@@ -1,0 +1,18 @@
+[Unit]
+Description=The Operating Table — Qwen surgery with Codex Astra
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/the-operating-table
+ExecStart=%h/the-operating-table/target/release/the-operating-table
+Environment=TABLE_PORT=3210
+Environment=TABLE_PUBLIC_ORIGIN=https://operation-room.dimensionlab.net
+Environment=RAYON_NUM_THREADS=8
+Environment=CODEX_BIN=%h/.local/bin/codex
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+
+[Install]
+WantedBy=default.target

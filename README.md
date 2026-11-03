@@ -49,9 +49,42 @@ cp .env.example .env
 | `SURGEON_REASONING_EFFORT` | `medium` | Codex reasoning effort |
 | `SURGEON_TIMEOUT_SECONDS` | `240` | Per-call timeout, capped at 900 seconds |
 | `TABLE_PORT` | `3000` | Loopback HTTP port |
+| `TABLE_PUBLIC_ORIGIN` | unset | Optional exact HTTPS origin allowed through a reverse proxy |
 | `TABLE_DATA_DIR` | `./data` | Model cache, patches, and procedure records |
 | `PATIENT_DEVICE` | `auto` | `auto`, `cpu`, or `metal` |
 | `RAYON_NUM_THREADS` | library default | CPU worker count; the example uses 8 |
+
+## Private HTTPS deployment
+
+The DimensionLab deployment uses **https://operation-room.dimensionlab.net** on the application host **192.168.2.252**. Both AdGuard resolvers (`192.168.2.250` and `192.168.2.253`) must resolve that hostname directly to `192.168.2.252`.
+
+The tracked deployment files are:
+
+- [`deploy/operation-room.caddy`](deploy/operation-room.caddy): Caddy terminates HTTPS and proxies the frontend and `/api/*` to `127.0.0.1:3210`. It imports the host's existing `cloudflare_tls` snippet for certificate issuance and renewal. Provider credentials stay outside this repository. Access follows the host's existing LAN/Tailscale policy.
+- [`deploy/the-operating-table.service`](deploy/the-operating-table.service): a user systemd service using this checkout, your Codex login, and the configured HTTPS origin. It restarts after a failure and can start at boot with user lingering enabled.
+
+Install on the existing DimensionLab app host after building with `cargo build --release`:
+
+```sh
+install -m 0644 deploy/the-operating-table.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now the-operating-table
+sudo install -m 0644 deploy/operation-room.caddy /etc/caddy/conf.d/
+sudo /usr/local/bin/caddy-cloudflare validate \
+  --config /etc/caddy/Caddyfile --envfile /etc/caddy/cloudflare.env
+sudo systemctl reload caddy
+```
+
+The existing Caddyfile must import `/etc/caddy/conf.d/*.caddy`. This snippet is intended for that established host, not an unconfigured Caddy installation. If a desktop session cannot connect to its user service manager, an administrator can use `sudo systemctl --user --machine=vince@.host status the-operating-table` (and the corresponding `start`/`restart` command).
+
+Verify HTTPS independently of DNS while its rewrite is being applied:
+
+```sh
+curl --resolve operation-room.dimensionlab.net:443:192.168.2.252 \
+  https://operation-room.dimensionlab.net/api/state
+```
+
+This verifies the server certificate normally; it does not bypass TLS verification. Once both resolvers return `192.168.2.252`, the normal URL works without an override. HTTP redirects to HTTPS. The Rust listener stays private on loopback.
 
 ## Perform surgery
 
@@ -86,7 +119,7 @@ The Rust harness checks tensor names, selections, finite values, dtype represent
 
 Codex runs ephemerally in an empty temporary directory with a JSON output schema, neutral instructions, ignored user configuration, a read-only sandbox, and built-in shell, editing, web, plugin, and agent tools disabled. Its JSON action is parsed and dispatched by Rust. Private reasoning is not shown or saved: the UI receives only the explicit short action summary and tool results. Each new call receives the bounded investigation transcript; no agent framework is involved. The configured call/edit budgets, output limits, and timeout bound each procedure, though Codex token use still depends on the chosen effort and evidence.
 
-The server binds to `127.0.0.1` and checks Host/Origin. Keep it local. Prompt text, bounded weight samples, and test outputs are sent to Codex. Procedure records remain under the ignored data directory. Do not put secrets in objectives or evaluation prompts.
+The server binds to `127.0.0.1` and checks Host/Origin. By default it accepts only direct local requests. Setting `TABLE_PUBLIC_ORIGIN` permits one exact HTTPS origin through a reverse proxy; it never trusts forwarded headers to expand that allowlist. The supplied Caddy configuration restricts access to the LAN and Tailscale. Prompt text, bounded weight samples, and test outputs are sent to Codex. Procedure records remain under the ignored data directory. Do not put secrets in objectives or evaluation prompts.
 
 ## Saved patches
 

@@ -1,0 +1,13 @@
+# Imported by the existing /etc/caddy/Caddyfile on the application host.
+# cloudflare_tls is the host's existing DNS-challenge TLS snippet.
+operation-room.dimensionlab.net {
+    import cloudflare_tls
+
+    @internal remote_ip 192.168.2.0/24 100.64.0.0/10 127.0.0.1/32 ::1 fd7a:115c:a1e0::/48
+    handle @internal {
+        reverse_proxy 127.0.0.1:3210
+    }
+    handle {
+        respond "Internal access only" 403
+    }
+}

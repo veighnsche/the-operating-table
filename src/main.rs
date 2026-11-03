@@ -1,3 +1,4 @@
+mod access;
 mod patient;
 mod surgeon;
 
@@ -50,6 +51,7 @@ struct App {
     data: Arc<PathBuf>,
     device: Arc<String>,
     port: u16,
+    access: access::Access,
 }
 impl App {
     fn event(&self, kind: &str, message: impl Into<String>, data: Value) {
@@ -385,21 +387,11 @@ async fn local_only(
     request: Request,
     next: Next,
 ) -> Response {
-    let host = headers
-        .get(header::HOST)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    let allowed = [
-        format!("127.0.0.1:{}", app.port),
-        format!("localhost:{}", app.port),
-    ];
-    if !allowed.iter().any(|v| v == host) {
-        return api_error(StatusCode::FORBIDDEN, "Local host required");
-    }
-    if let Some(origin) = headers.get(header::ORIGIN) {
-        if origin.to_str().ok() != Some(&format!("http://{host}")) {
-            return api_error(StatusCode::FORBIDDEN, "Same-origin requests only");
-        }
+    if !app.access.allows(&headers) {
+        return api_error(
+            StatusCode::FORBIDDEN,
+            "Allowed host and same-origin requests only",
+        );
     }
     let mut response = next.run(request).await;
     response
@@ -417,6 +409,12 @@ async fn main() -> Result<()> {
     let _ = dotenvy::dotenv();
     let data = PathBuf::from(std::env::var("TABLE_DATA_DIR").unwrap_or_else(|_| "data".into()));
     std::fs::create_dir_all(&data)?;
+    let port = std::env::var("TABLE_PORT")
+        .unwrap_or_else(|_| "3000".into())
+        .parse()
+        .context("TABLE_PORT must be a valid port")?;
+    let public_origin = std::env::var("TABLE_PUBLIC_ORIGIN").ok();
+    let access = access::Access::new(port, public_origin.as_deref())?;
     let app = App {
         patient: Arc::new(Mutex::new(None)),
         room: Arc::new(Mutex::new(Room {
@@ -436,10 +434,8 @@ async fn main() -> Result<()> {
         cancel: Arc::new(AtomicBool::new(false)),
         data: Arc::new(std::fs::canonicalize(data)?),
         device: Arc::new(std::env::var("PATIENT_DEVICE").unwrap_or_else(|_| "auto".into())),
-        port: std::env::var("TABLE_PORT")
-            .unwrap_or_else(|_| "3000".into())
-            .parse()
-            .context("TABLE_PORT must be a valid port")?,
+        port,
+        access,
     };
     let router = Router::new()
         .route(
