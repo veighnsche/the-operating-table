@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101613">
+  <title>The Operating Table</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="The Operating Table home"><span class="brand-mark">✳</span><span>THE OPERATING<br>TABLE<span class="brand-dot">.</span></span></a>
+    <p class="tagline">One AI on the table. Another holding the scalpel.</p>
+    <div class="header-status"><span class="status-light" id="connection-light"></span><span id="connection">CONNECTING</span><span class="header-rule"></span><span>LOCAL ENVIRONMENT</span></div>
+  </header>
+  <main>
+    <div class="page-heading"><div><div class="eyebrow"><span class="cross">+</span> MODEL INTERVENTION CONSOLE <span class="muted">/ 01</span></div><h1>The Operating Table<span>.</span></h1><p>A controlled workspace for inspecting and modifying a language model.</p></div><div class="phase-box"><span class="tiny">PROCEDURE STATUS</span><span id="phase" class="phase">AWAITING PATIENT</span></div></div>
+    <div id="error" class="error-banner" role="alert" hidden></div>
+    <div class="workspace">
+      <section class="panel surgeon" aria-labelledby="surgeon-title">
+        <div class="panel-heading"><div><div class="eyebrow">01 / THE SURGEON</div><h2 id="surgeon-title">Procedure control</h2></div><span class="panel-icon">✳</span></div>
+        <div class="identity"><div class="identity-icon">✳</div><div><span class="tiny">OPERATING AGENT</span><strong>GPT-6 Astra</strong><span class="subtle">via Codex CLI</span></div><span class="identity-end">↗</span></div>
+        <div class="section-label"><span>01</span> PREPARE PATIENT</div>
+        <button class="button secondary full" id="load"><span>Load patient model</span><span>↗</span></button>
+        <p class="helper">Load Qwen3-0.6B into the local environment before beginning.</p>
+        <div class="section-label"><span>02</span> DEFINE OBJECTIVE</div>
+        <label class="sr-only" for="objective">Surgical objective</label><textarea id="objective" placeholder="Describe the behavior you want to change…" maxlength="4000"></textarea>
+        <div class="limits"><label>TOOL CALLS <input id="max-tools" type="number" min="1" max="100" value="12"></label><label>EXPERIMENTS <input id="max-experiments" type="number" min="1" max="20" value="3"></label></div>
+        <button class="button primary full" id="surgery"><span>Begin surgery</span><span>↗</span></button>
+        <div class="section-label activity-label"><span>03</span> PROCEDURE LOG <span class="live-label" id="activity-count">0 EVENTS</span></div>
+        <div id="activity" class="activity" aria-live="polite"><div class="empty-log"><span>⌁</span><p>Waiting for activity.<br><small>Procedure events will appear here.</small></p></div></div>
+      </section>
+      <section class="panel theater" aria-labelledby="theater-title">
+        <div class="panel-heading"><div><div class="eyebrow">02 / THE OPERATING FIELD</div><h2 id="theater-title">Neural architecture</h2></div><div class="diagram-meta"><span id="layer-count">28 LAYERS</span><span class="mini-cross">✳</span></div></div>
+        <div class="field-intro"><span>TRANSFORMER LAYERS</span><span>SELECT A LAYER TO INSPECT <b>↗</b></span></div>
+        <div id="active-tensor" class="active-tensor" hidden></div><div class="diagram-wrap"><div class="diagram-grid"></div><div class="diagram-label top-label">INPUT <span>↓</span></div><div id="layers" class="layers" aria-label="Model layers"></div><div class="diagram-label bottom-label">OUTPUT <span>↓</span></div></div>
+        <div class="legend"><span><i></i> AVAILABLE</span><span><i class="active-key"></i> INSPECTING</span><span><i class="modified-key"></i> MODIFIED</span></div>
+        <div class="inspector" id="inspector"><div class="inspector-head"><div><span class="tiny">TISSUE INSPECTION</span><h3 id="inspector-title">Select a layer</h3></div><span class="inspect-symbol">⌕</span></div><p id="inspect-message">Explore a layer to view its tensor catalog.</p><div id="inspect-results"></div></div>
+      </section>
+      <section class="panel patient" aria-labelledby="patient-title">
+        <div class="panel-heading"><div><div class="eyebrow">03 / THE PATIENT</div><h2 id="patient-title">Patient monitor</h2></div><span class="patient-cross">+</span></div>
+        <div class="patient-name"><div><span class="tiny">MODEL</span><h3 id="model">Qwen3-0.6B</h3><span class="subtle">Language model</span></div><span id="loaded-pill" class="pill">NOT LOADED</span></div>
+        <div class="patient-stats"><div><span>PARAMETERS</span><strong id="parameters">—</strong></div><div><span>DEVICE</span><strong id="device">—</strong></div><div><span>MODIFIED</span><strong id="changed">—</strong></div><div><span>REVISION</span><strong id="revision">—</strong></div></div>
+        <div class="progress-label"><span>PARAMETERS MODIFIED</span><strong id="percent">0.0000%</strong></div><div class="progress"><span id="progress"></span></div>
+        <div class="monitor-line"><span>PROCEDURE RESOURCES</span><span id="resources">0 / 12 CALLS · 0 / 3 EDITS</span></div>
+        <div class="section-label"><span>04</span> VERIFY &amp; CLOSE</div>
+        <button class="button secondary full" id="compare"><span>Compare outputs</span><span>↗</span></button>
+        <p class="helper">Short greedy generation tests provide a quick before-and-after check, not a benchmark.</p>
+        <button class="button secondary full accept" id="accept"><span>Accept &amp; save patch</span><span>↗</span></button>
+        <button class="button emergency full" id="revert"><span>✳ &nbsp; Emergency revert</span><span>↗</span></button>
+        <p class="helper">Stops an active procedure and restores the patient.</p>
+      </section>
+    </div>
+    <section id="comparison-section" class="comparison panel" hidden><div class="panel-heading"><div><div class="eyebrow">04 / PROCEDURE REVIEW</div><h2>Before &amp; after</h2></div><span class="tiny">GREEDY GENERATION · SHORT TOKEN TESTS</span></div><p class="helper">Compare the same prompts across the original and working model. These quick checks are not a benchmark.</p><div id="comparison-results"></div></section>
+  </main>
+  <footer><span>✳ &nbsp; THE OPERATING TABLE</span><span>LOCAL MODEL INTERVENTION CONSOLE</span><span>HANDLE WITH CARE &nbsp; +</span></footer>
+</body></html>

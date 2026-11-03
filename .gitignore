@@ -1,0 +1,8 @@
+/target/
+/data/
+.env
+.env.*
+!.env.example
+*.safetensors
+*.gguf
+.DS_Store
